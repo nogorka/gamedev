@@ -27,8 +27,8 @@ function Rect:update()
 end
 
 function Rect:hasMover(obj)
-    if obj.location.x > self.x - obj.size and obj.location.x + self.width < self.x - obj.size then
-        if obj.location.y > self.y - obj.size and obj.location.y + self.height < self.y - obj.size then
+    if obj.location.x > self.x and obj.location.x + obj.size < self.x + self.width then
+        if obj.location.y > self.y and obj.location.y + obj.size < self.y + self.height then
             return true
         end
     end

@@ -14,8 +14,8 @@ function love.load()
     wmover.size = 30
 
     --rects
-    rect1 = Rect:create(0, 0, width / 2, height / 2, {0, 199 / 256, 234 / 256, 0.5}) -- blue
-    rect2 = Rect:create(width / 2, height / 2, width / 2, height, {1, 100 / 256, 100 / 256, 0.5}) -- red
+    rect1 = Rect:create(100, 100, 300, 200, {0, 199 / 256, 234 / 256, 0.5}) -- blue
+    rect2 = Rect:create(500, 300, 200, 300, {1, 100 / 256, 100 / 256, 0.5}) -- red
 
     --forces
     wind = Vector:create(0.01, 0)
@@ -41,27 +41,51 @@ function love.draw()
 end
 
 function love.update()
-    mover:applyForce(gravity)
-    wmover:applyForce(gravity)
+    if isGravity then
+        mover:applyForce(gravity)
+        wmover:applyForce(gravity)
+    end
+    if isWind then
+        mover:applyForce(wind)
+        wmover:applyForce(wind)
+    end
+    if isFloating then
+        mover:applyForce(floating)
+        wmover:applyForce(floating)
+    end
 
-    mover:applyForce(wind)
-    wmover:applyForce(wind)
+    if rect1:hasMover(mover) then
+        -- print("rect1: " .. tostring(friction))
+        -- print("rect1: ")
+        friction = mover.velocity:norm()
+        friction:mul(0.05)
+        mover:applyForce(friction)
+    elseif rect2:hasMover(mover) then
+        friction = mover.velocity:norm()
+        friction:mul(-0.05)
+        mover:applyForce(friction)
 
-    friction = (mover.velocity * -1):norm()
-    if friction then
-        if rect1:hasMover(mover) then
-            friction:mul(0.5)
-            mover:applyForce(friction)
-        end
-
-        if rect2:hasMover(mover) then
-            friction:mul(-0.5)
-            mover:applyForce(friction)
-        end
+    -- print("rect2: " .. tostring(friction))
+    -- print("rect2: ")
     end
 
     mover:update()
     wmover:update()
     mover:checkBoundaries()
     wmover:checkBoundaries()
+end
+
+function love.keypressed(key)
+    if key == "g" then
+        isGravity = not isGravity
+    end
+    if key == "f" then
+        isFloating = not isFloating
+    end
+    if key == "w" then
+        isWind = not isWind
+        if isWind then
+            wind = wind * -1
+        end
+    end
 end
