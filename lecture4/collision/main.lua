@@ -21,10 +21,37 @@ function love.load()
     vr1 = 1
 
     -- rect2
-    sr2 = 40
+    sr2 = 50
     xr2 = width - sr2 * 2
     yr2 = 150
     vr2 = -1
+
+    --line1
+    ax = 0
+    ay = 250
+    bx = 20
+    by = 275
+    vl1 = 1
+
+    --line2
+    cx = width
+    cy = 250
+    dx = width - 20
+    dy = 275
+    vl2 = -1
+
+    --line
+    p1x = 100
+    p1y = 350
+    p2x = 0
+    p2y = 350
+    pv = 1
+
+    --circle
+    r3 = 30
+    xc3 = width - r3
+    yc3 = 350
+    vc3 = -1
 end
 
 function love.draw()
@@ -32,15 +59,43 @@ function love.draw()
     if circle_collision() then
         love.graphics.setColor(1, 0, 0)
     end
+
     love.graphics.circle("fill", xc1, yc1, r1)
     love.graphics.circle("fill", xc2, yc2, r2)
 
+    --rects
     love.graphics.setColor(1, 1, 1)
     if rect_collision() then
         love.graphics.setColor(1, 0, 0)
     end
+
     love.graphics.rectangle("fill", xr1, yr1, sr1, sr1)
     love.graphics.rectangle("fill", xr2, yr2, sr2, sr2)
+
+    --lines
+    love.graphics.setColor(1, 1, 1)
+    if lines_collision() then
+        love.graphics.setColor(1, 0, 0)
+    end
+
+    love.graphics.setLineWidth(2)
+    love.graphics.line(ax, ay, bx, by)
+    love.graphics.line(cx, cy, dx, dy)
+
+    --line&circle
+    love.graphics.setColor(1, 1, 1)
+    local result = line_circle_collision()
+    if result then
+        love.graphics.setColor(0, 1, 0)
+        for count = 1, #result do
+            x = result[count][1]
+            y = result[count][2]
+            love.graphics.circle("fill", x, y, 4)
+        end
+        love.graphics.setColor(1, 0, 0)
+    end
+    love.graphics.line(p1x, p1y, p2x, p2y)
+    love.graphics.circle("fill", xc3, yc3, r3)
 end
 
 function love.update()
@@ -67,6 +122,32 @@ function love.update()
     if xr2 > width - sr2 or xr2 < sr2 then
         vr2 = -vr2
     end
+
+    --lines
+    ax = ax + vl1
+    bx = bx + vl1
+    if bx > width or ax < 0 then
+        vl1 = -vl1
+    end
+
+    cx = cx + vl2
+    dx = dx + vl2
+    if cx > width or dx < 0 then
+        vl2 = -vl2
+    end
+
+    if love.keyboard.isDown("space") then
+        p1x = p1x + pv
+        p2x = p2x + pv
+        if p2x > width or p1x < 0 then
+            pv = -pv
+        end
+
+        xc3 = xc3 + vc3
+        if xc3 > width - r3 or xc3 < 0 then
+            vc3 = -vc3
+        end
+    end
 end
 
 function circle_collision()
@@ -78,9 +159,62 @@ function circle_collision()
 end
 
 function rect_collision()
-    local dx = 0
-    local dy = 0
+    local bottom = yr1 + sr1 < yr2
+    local top = yr1 > yr2 + sr2
+    local left = xr1 > xr2 + sr2
+    local right = xr1 + sr1 < xr2
 
-    local dist = math.sqrt(dx * dx + dy * dy)
-    return false
+    return not (bottom or top or left or right)
+end
+
+function lines_collision()
+    local denom = ((dy - cy) * (bx - ax)) - ((dx - cx) * (by - ay))
+    local ua = (dx - cx) * (ay - cy) - (dy - cy) * (ax - cx)
+    local ua = ua / denom
+    local ub = (bx - ax) * (ay - cy) - (by - ay) * (ax - cx)
+    local ub = ub / denom
+    --print(ua, ub)
+    return (ua >= 0 and ua <= 1) and (ub >= 0 and ub <= 1)
+end
+
+function line_circle_collision()
+    local locp1x = p1x - xc3
+    local locp1y = p1y - yc3
+    local locp2x = p2x - xc3
+    local locp2y = p2y - yc3
+
+    local p1p2x = locp2x - locp1x
+    local p1p2y = locp2y - locp1y
+
+    local a = p1p2x * p1p2x + p1p2y * p1p2y
+    local b = 2 * (p1p2x * locp1x + p1p2y * locp1y)
+    local c = locp1x * locp1x + locp1y * locp1y - r3 * r3
+
+    local d = b * b - (4 * a * c)
+
+    if d < 0 then
+        return nil
+    elseif d == 0 then
+        local u = -b / (2 * a)
+        local x = p1x + (u * p1p2x)
+        local y = p1y + (u * p1p2y)
+        return {{x, y}}
+    else
+        local sqr = math.sqrt(d)
+
+        local u1 = (-b + sqr) / (2 * a)
+        local u2 = (-b - sqr) / (2 * a)
+
+        if not (u1 > 0 and u1 < 1) and not (u2 > 0 and u2 < 1) then
+            return nil
+        end
+
+        local x1 = p1x + (u1 * p1p2x)
+        local y1 = p1y + (u1 * p1p2y)
+
+        local x2 = p1x + (u2 * p1p2x)
+        local y2 = p1y + (u2 * p1p2y)
+
+        return {{x1, y1}, {x2, y2}}
+    end
 end
